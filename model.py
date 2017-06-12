@@ -29,7 +29,7 @@ class Model(object):
             if reuse:
                 tf.get_variable_scope().reuse_variables()
             with tf.variable_scope('term_score'):
-                # histogram : [batch_size, max_query_word * max_bin_size]
+                # histogram : [batch_size, max_query_word, max_bin_size]
                 histogram = tf.reshape(histogram, [-1, self.max_bin_size])
                 hidden = tf.layers.dense(inputs=histogram, units=5, activation=tf.nn.relu)
                 query_term_score = tf.layers.dense(inputs=hidden, units=1, activation=tf.nn.relu)
