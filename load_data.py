@@ -2,8 +2,8 @@ import numpy as np
 import json
 from util import FLAGS
 
-#suppose input train_file is a json file like {query_id:123, pos_ans_id: , pos_histograms:[[],[],[]],neg_ans_id: ,neg_histograms:[[], [], ...[]], idf:[]}
-#suppose input dev_file is a json file like{query_id:123, ans_id: ,ans_label:  histogram:[[],[]...[], idf:[]]}
+#suppose input train_file is a json file like {query_id:123, pos: {histograms:[[],[],[]], passage_id:, },neg:{histograms:[[], [], ...[]], passage: ,}idf:[]}
+#suppose input dev_file is a json file like{query_id:123, query: ,passages: [label:  , passsage_id: , histograms:[[],[]...[], idf:[]]]}
 
 class LoadTrainData(object):
     def __init__(self, data_path, batch_size=64):
@@ -18,7 +18,7 @@ class LoadTrainData(object):
         for histogram in histograms:
             row = []
             for item in histogram:
-                row.append(int(item))
+                row.append(float(item))
             result.append(row)
         return result
 
@@ -42,14 +42,16 @@ class LoadTrainData(object):
                 histograms = []
                 line = json.loads(line)
                 query_id = line['query_id']
-                pos_histogram = line['pos_histogram']
-                neg_histogram = line['neg_histogram']
+                pos = line['pos']
+                pos_histogram = pos['histograms']
+                neg = line['neg']
+                neg_histogram = neg['histograms']
                 idf = line['idf']
                 pos_histogram = self.translation(pos_histogram)
                 histograms.append(pos_histogram)
                 neg_histogram = self.translation(neg_histogram)
                 histograms.append(neg_histogram)
-                idf = [int(i) for i in idf]
+                idf = [float(i) for i in idf]
                 batch_histograms.append(histograms)
                 batch_idfs.append(idf)
 
@@ -93,17 +95,19 @@ class LoadTestData(object):
                 self.cnt += 1
                 line = json.loads(line)
                 query_id = line['query_id']
-                ans_id = line['ans_id']
-                ans_label = line['ans_label']
-                histogram = line['histogram']
+                passages = line['passages']
                 idf = line['idf']
-                histogram = self.translation(histogram)
                 idf = [int(i) for i in idf]
-                batch_histograms.append(histogram)
-                batch_idfs.append(idf)
-                batch_query_ids.append(query_id)
-                batch_ans_ids.append(ans_id)
-                batch_ans_labels.append(ans_label)
+                for p in passages:
+                    ans_id = p['passage_id']
+                    ans_label = p['label']
+                    histogram = p['histograms']
+                    histogram = self.translation(histogram)
+                    batch_histograms.append(histogram)
+                    batch_idfs.append(idf)
+                    batch_query_ids.append(query_id)
+                    batch_ans_ids.append(ans_id)
+                    batch_ans_labels.append(ans_label)
 
             yield batch_histograms, batch_idfs, batch_query_ids, batch_ans_ids, batch_ans_labels
         print("self.cnt:", self.cnt)
